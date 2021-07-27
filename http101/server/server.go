@@ -1,6 +1,8 @@
 package server
 
 import (
+	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -42,12 +44,13 @@ type Server struct {
 	*http.Server
 }
 
-func NewServer(addr string, h http.Handler) Server {
+func NewServer(addr string, h http.Handler, lw io.Writer) Server {
 	s := http.Server{
 		Addr:              addr,
 		Handler:           h,
 		ReadHeaderTimeout: DefaultTimeoutHeaders,
 		IdleTimeout:       DefaultIdleTimeout,
+		ErrorLog:          log.New(lw, "serverLogger", 0),
 	}
 	return Server{Server: &s}
 }

@@ -9,11 +9,16 @@ import (
 	"time"
 
 	"example.com/server"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	logger := logrus.New()
+	logger.Formatter = &logrus.JSONFormatter{}
+	w := logger.Writer()
+	defer w.Close()
 	r := server.NewRouter()
-	server := server.NewServer("127.0.0.1:8080", r)
+	server := server.NewServer("127.0.0.1:8080", r, w)
 
 	errs := make(chan error)
 	go func() {
