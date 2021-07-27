@@ -4,9 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
+)
+
+const (
+	// extraDataMaxBytes maximum number of bytes to read after `More()`.
+	extraDataMaxBytes = 4096
 )
 
 type Client struct {
@@ -47,7 +56,30 @@ func (c *Client) GetSleepy(ctx context.Context) {
 	}
 	defer resp.Body.Close()
 	var r response
-	decoder := json.NewDecoder(resp.Body)
-	decoder.Decode(&r)
+	err = unmarshalReader(resp.Body, &r)
+	if err != nil {
+		fmt.Println("failed to unmarshal the response: %s", err.Error())
+		return
+	}
 	fmt.Println("received response: ", resp.StatusCode, resp.Proto)
+}
+
+// unmarshalReader is a helper method to decode the body of the response. Once it manages to decode
+// the body it tries to call `More` to make sure there are no additional data in the response. If
+// yes, it tries to read them and returns them as error containing the additional data as a string.
+func unmarshalReader(r io.Reader, val interface{}) error {
+	decoder := json.NewDecoder(r)
+	err := decoder.Decode(val)
+	if err != nil {
+		return err
+	}
+	if decoder.More() {
+		extraDataReader := io.LimitReader(io.MultiReader(decoder.Buffered(), r), extraDataMaxBytes)
+		extraData, err := ioutil.ReadAll(extraDataReader)
+		if err != nil {
+			return err
+		}
+		return errors.New(fmt.Sprintf("there are more data after the response was read: %s", extraData))
+	}
+	return nil
 }
