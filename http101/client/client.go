@@ -40,5 +40,6 @@ func (c *Client) GetSleepy(ctx context.Context) {
 		fmt.Println("received error from request:", err.Error())
 		return
 	}
+	defer resp.Body.Close()
 	fmt.Println("received response: ", resp.StatusCode, resp.Proto)
 }
