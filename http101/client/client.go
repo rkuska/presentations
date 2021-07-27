@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -41,5 +43,6 @@ func (c *Client) GetSleepy(ctx context.Context) {
 		return
 	}
 	defer resp.Body.Close()
+	io.Copy(ioutil.Discard, resp.Body)
 	fmt.Println("received response: ", resp.StatusCode, resp.Proto)
 }
