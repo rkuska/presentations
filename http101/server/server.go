@@ -1,9 +1,11 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -17,6 +19,10 @@ const (
 	DefaultIdleTimeout    = 6 * time.Minute
 )
 
+type response struct {
+	Msg string
+}
+
 func SleepyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	timer := time.NewTimer(10 * time.Millisecond)
@@ -26,9 +32,15 @@ func SleepyHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Write([]byte("hell broke lose"))
 	case <-timer.C:
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("all is dandy"))
+		EncodeJSONResponse(response{strings.Repeat("x", 502)}, w)
 	}
+}
+
+func EncodeJSONResponse(response interface{}, w http.ResponseWriter) error {
+	w.Header().Set(ContentType, ContentTypeJSON)
+	w.WriteHeader(http.StatusOK)
+	encoder := json.NewEncoder(w)
+	return encoder.Encode(response)
 }
 
 func NewRouter() *mux.Router {

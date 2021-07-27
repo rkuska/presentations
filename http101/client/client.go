@@ -2,9 +2,8 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -12,6 +11,10 @@ import (
 
 type Client struct {
 	c *http.Client
+}
+
+type response struct {
+	Msg string
 }
 
 func NewClient() *Client {
@@ -43,6 +46,8 @@ func (c *Client) GetSleepy(ctx context.Context) {
 		return
 	}
 	defer resp.Body.Close()
-	io.Copy(ioutil.Discard, resp.Body)
+	var r response
+	decoder := json.NewDecoder(resp.Body)
+	decoder.Decode(&r)
 	fmt.Println("received response: ", resp.StatusCode, resp.Proto)
 }
